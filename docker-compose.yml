@@ -1,0 +1,93 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: nutritrack
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nutritrack}
+      POSTGRES_DB: nutritrack
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nutritrack"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    expose:
+      - "8000"
+    environment:
+      DATABASE_URL: postgresql://nutritrack:${POSTGRES_PASSWORD:-nutritrack}@db:5432/nutritrack
+      SECRET_KEY: "${SECRET_KEY:?SECRET_KEY must be set - run openssl rand -hex 32}"
+      OLLAMA_BASE_URL: http://host.docker.internal:11434/v1
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
+      CHROMA_PERSIST_DIR: /data/chroma
+      UPLOAD_DIR: /data/uploads
+      APP_ENV: ${APP_ENV:-production}
+      DEBUG: "false"
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+    volumes:
+      - nutritrack_data:/data
+    # Production command: start the API only. Migrations run in the migrate service.
+    command: >
+      sh -c "
+        if [ '$$APP_ENV' = 'development' ]; then
+          echo 'Running seed.py (development only)…' && python seed.py;
+        fi &&
+        uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1
+      "
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  migrate:
+    build: ./backend
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://nutritrack:${POSTGRES_PASSWORD:-nutritrack}@db:5432/nutritrack
+      SECRET_KEY: "${SECRET_KEY:?SECRET_KEY must be set}"
+      APP_ENV: ${APP_ENV:-production}
+    command: alembic upgrade head
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    expose:
+      - "80"
+    depends_on:
+      - backend
+
+  # Reverse proxy — SSL termination, request buffering (Issue 31)
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+    profiles:
+      - production   # only started when: docker compose --profile production up
+
+volumes:
+  pgdata:
+  nutritrack_data:
