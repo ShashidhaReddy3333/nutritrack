@@ -3,6 +3,18 @@ Shared test fixtures for NutriTrack backend.
 Uses an in-memory SQLite database for isolation.
 """
 
+import os
+
+os.environ.setdefault("APP_ENV", "test")
+os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
+os.environ.setdefault("SECRET_KEY", "test-secret-key-with-enough-entropy-for-tests")
+os.environ.setdefault("POSTGRES_PASSWORD", "test-password")
+os.environ.setdefault("CORS_ORIGINS", "http://localhost:5173")
+os.environ.setdefault("COOKIE_SECURE", "false")
+os.environ.setdefault("PUBLIC_APP_URL", "http://localhost:5173")
+os.environ.setdefault("RATE_LIMIT_STORAGE_URI", "memory://")
+os.environ.setdefault("OLLAMA_BASE_URL", "http://localhost:11434/v1")
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -10,6 +22,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.core.database import Base, get_db
+from app.core.rate_limit import limiter
 from app.main import app
 
 # ── In-memory SQLite ──────────────────────────────────────────────────────────
@@ -49,11 +62,13 @@ def override_get_db():
 
 @pytest.fixture(scope="function")
 def client():
+    limiter.reset()
     app.dependency_overrides[get_db] = override_get_db
     Base.metadata.create_all(bind=test_engine)
     with TestClient(app, raise_server_exceptions=True) as c:
         yield c
     app.dependency_overrides.clear()
+    limiter.reset()
     Base.metadata.drop_all(bind=test_engine)
 
 

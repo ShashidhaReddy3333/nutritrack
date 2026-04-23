@@ -2,12 +2,15 @@
 .env
 *.env
 !.env.example
+!.env.production.example
+!.env.development.example
 
 # Python
 __pycache__/
 *.py[cod]
 *.pyo
 .venv/
+.test-venv/
 venv/
 env/
 *.egg-info/
@@ -21,6 +24,8 @@ htmlcov/
 # Node / frontend
 node_modules/
 dist/
+test-results/
+playwright-report/
 .parcel-cache/
 
 # IDE

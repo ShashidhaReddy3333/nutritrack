@@ -87,9 +87,13 @@ async def parse_meal(
     results: list[ParsedItemWithCandidates] = []
 
     for item_data in parsed_items:
-        item_name = item_data.get("item", "")
-        quantity = float(item_data.get("quantity", 1))
-        unit = str(item_data.get("unit", "serving"))
+        item_name = str(item_data.get("item", "")).strip()[:160] or "Item"
+        try:
+            quantity = float(item_data.get("quantity", 1))
+        except (TypeError, ValueError):
+            quantity = 1.0
+        quantity = min(max(quantity, 0.01), 10000)
+        unit = str(item_data.get("unit", "serving")).strip()[:40] or "serving"
 
         sem_results = await asyncio.to_thread(semantic_search, item_name, str(current_user.id), 5)
 
@@ -128,7 +132,7 @@ async def parse_meal(
                         product_id=p.id,
                         name=p.name,
                         brand=p.brand,
-                        score=product_scores[str(p.id)],
+                        score=min(max(float(product_scores[str(p.id)]), 0.0), 1.0),
                         serving_size_g=p.serving_size_g,
                         calories_per_serving=p.calories,
                     )

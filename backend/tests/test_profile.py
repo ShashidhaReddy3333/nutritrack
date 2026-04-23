@@ -20,6 +20,7 @@ class TestCreateProfile:
         assert resp.status_code == 201
         data = resp.json()
         assert data["age"] == 28
+        assert data["timezone"] == "UTC"
         assert data["calculated_targets"] is not None
 
     def test_create_profile_duplicate_fails(self, auth_client):
@@ -61,9 +62,19 @@ class TestGetProfile:
 class TestUpdateProfile:
     def test_update_profile(self, auth_client):
         auth_client.post("/api/v1/profile", json=BASE_PROFILE)
-        resp = auth_client.patch("/api/v1/profile", json={"age": 30})
+        resp = auth_client.patch("/api/v1/profile", json={"age": 30, "timezone": "America/Toronto"})
         assert resp.status_code == 200
         assert resp.json()["age"] == 30
+        assert resp.json()["timezone"] == "America/Toronto"
+
+    def test_update_override_targets(self, auth_client):
+        auth_client.post("/api/v1/profile", json=BASE_PROFILE)
+        resp = auth_client.patch(
+            "/api/v1/profile",
+            json={"override_targets": {"calories": 2400, "protein_g": 150, "carbs_g": 250, "fat_g": 70}},
+        )
+        assert resp.status_code == 200
+        assert resp.json()["daily_targets_json"]["calories"] == 2400
 
     def test_clear_override_targets_with_null(self, auth_client):
         auth_client.post("/api/v1/profile", json={

@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getProfile, updateProfile } from '../api/profile';
+import { deleteAccount, exportAccountData } from '../api/users';
 import type { ActivityLevel, BodyCompositionReport, DailyTargets, Goal, ProfileOut } from '../types';
 import Layout from '../components/Layout';
+import { useAuthStore } from '../hooks/useAuth';
+import { getBrowserTimezone } from '../utils/timezone';
 import {
   BODY_COMPOSITION_FIELDS,
   parseBodyCompositionReport,
@@ -50,7 +54,7 @@ const EMPTY_TARGETS: TargetFormState = {
   sodium_mg: '',
 };
 
-function buildTargetState(targets?: DailyTargets): TargetFormState {
+function buildTargetState(targets?: DailyTargets | null): TargetFormState {
   if (!targets) return EMPTY_TARGETS;
 
   return {
@@ -122,6 +126,8 @@ function MetricGrid({
 }
 
 export default function ProfilePage() {
+  const navigate = useNavigate();
+  const { logout } = useAuthStore();
   const [profile, setProfile] = useState<ProfileOut | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -130,6 +136,7 @@ export default function ProfilePage() {
   const [age, setAge] = useState('');
   const [goal, setGoal] = useState<Goal>('maintain');
   const [activity, setActivity] = useState<ActivityLevel>('moderately_active');
+  const [timezone, setTimezone] = useState(getBrowserTimezone());
   const [bodyReport, setBodyReport] = useState<BodyCompositionReport | null>(null);
   const [useCustomTargets, setUseCustomTargets] = useState(false);
   const [targetValues, setTargetValues] = useState<TargetFormState>(EMPTY_TARGETS);
@@ -137,6 +144,8 @@ export default function ProfilePage() {
   const [scanError, setScanError] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [accountStatus, setAccountStatus] = useState('');
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   useEffect(() => {
     getProfile()
@@ -147,6 +156,7 @@ export default function ProfilePage() {
         setAge(String(r.data.age));
         setGoal(r.data.goal);
         setActivity(r.data.activity_level);
+        setTimezone(r.data.timezone || getBrowserTimezone());
         setBodyReport(r.data.body_composition_json ?? null);
         setUseCustomTargets(Boolean(r.data.daily_targets_json));
         setTargetValues(buildTargetState(r.data.daily_targets_json ?? r.data.calculated_targets));
@@ -187,6 +197,7 @@ export default function ProfilePage() {
         height_cm: parseFloat(height),
         goal,
         activity_level: activity,
+        timezone,
         override_targets: overrideTargets,
         body_composition_report: bodyReport ?? undefined,
       });
@@ -200,6 +211,33 @@ export default function ProfilePage() {
       setSaveError('Failed to save changes');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleExportAccount = async () => {
+    setAccountStatus('');
+    try {
+      const response = await exportAccountData();
+      const url = window.URL.createObjectURL(response.data as Blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `nutritrack_export_${new Date().toISOString().slice(0, 10)}.json`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+      setAccountStatus('Export started.');
+    } catch {
+      setAccountStatus('Export failed. Please try again.');
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setAccountStatus('');
+    try {
+      await deleteAccount();
+      logout();
+      navigate('/register');
+    } catch {
+      setAccountStatus('Account deletion failed. Please try again.');
     }
   };
 
@@ -256,7 +294,7 @@ export default function ProfilePage() {
 
             <div className="glass-card rounded-2xl p-5 animate-fade-up">
               <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Settings</h2>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="bg-dark-700/60 rounded-xl p-4">
                   <div className="text-xs text-gray-600 mb-1">Activity level</div>
                   <div className="text-sm font-semibold text-gray-200">{ACTIVITY_LABELS[profile.activity_level]}</div>
@@ -267,6 +305,10 @@ export default function ProfilePage() {
                     <span>{GOAL_ICONS[profile.goal]}</span>
                     {GOAL_LABELS[profile.goal]}
                   </div>
+                </div>
+                <div className="bg-dark-700/60 rounded-xl p-4">
+                  <div className="text-xs text-gray-600 mb-1">Timezone</div>
+                  <div className="text-sm font-semibold text-gray-200">{profile.timezone}</div>
                 </div>
               </div>
             </div>
@@ -359,6 +401,11 @@ export default function ProfilePage() {
                 <option value="very_active">Very active</option>
                 <option value="extra_active">Extra active</option>
               </select>
+            </div>
+
+            <div>
+              <label className="label-dark">Timezone</label>
+              <input value={timezone} onChange={(e) => setTimezone(e.target.value)} className="input-dark" />
             </div>
 
             <div className="space-y-4">
@@ -506,6 +553,49 @@ export default function ProfilePage() {
                 ) : 'Save changes'}
               </button>
             </div>
+          </div>
+        )}
+
+        {!editing && (
+          <div className="glass-card rounded-2xl p-5 animate-fade-up">
+            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Account Data</h2>
+            <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+              <p className="text-sm text-gray-500">
+                Export your account data or permanently delete the account and all saved nutrition records.
+              </p>
+              <div className="flex gap-2">
+                <button type="button" onClick={handleExportAccount} className="btn-secondary text-sm px-4">
+                  Export
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirmOpen(true)}
+                  className="text-sm px-4 py-2 rounded-xl border border-red-800/60 text-red-400 hover:bg-red-900/20 transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+            {deleteConfirmOpen && (
+              <div className="mt-4 rounded-xl border border-red-800/60 bg-red-900/20 p-4">
+                <p className="text-sm text-red-300 mb-3">
+                  This permanently deletes your account, products, meals, profile, and saved tokens.
+                </p>
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => setDeleteConfirmOpen(false)} className="btn-secondary text-sm px-4">
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDeleteAccount}
+                    className="text-sm px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-500 transition-colors"
+                  >
+                    Permanently delete
+                  </button>
+                </div>
+              </div>
+            )}
+            {accountStatus && <div className="text-xs text-gray-500 mt-3">{accountStatus}</div>}
           </div>
         )}
       </div>

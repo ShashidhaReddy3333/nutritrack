@@ -239,7 +239,11 @@ def update_product(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    for field, value in payload.model_dump(exclude_unset=True).items():
+    update_data = payload.model_dump(exclude_unset=True)
+    nullable_fields = {"brand", "serving_quantity", "serving_unit", "sugar_g", "fiber_g", "sodium_mg", "other_nutrients_json"}
+    for field, value in update_data.items():
+        if value is None and field not in nullable_fields:
+            raise HTTPException(status_code=422, detail=f"{field} cannot be null")
         setattr(product, field, value)
     db.commit()
     db.refresh(product)

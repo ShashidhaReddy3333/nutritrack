@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { ChangeEvent, ReactNode, useEffect, useRef, useState } from 'react';
 import Layout from '../components/Layout';
+import Dialog from '../components/Dialog';
 import { extractPdf, createProduct, listProducts, deleteProduct, updateProduct } from '../api/products';
 import type { ExtractionReview, ProductCreate } from '../api/products';
 import { createMealEntry } from '../api/meals';
@@ -21,13 +22,21 @@ const NUM_FIELDS: Array<{ key: keyof ProductCreate; label: string; unit: string;
 
 // ── Shared Modal Shell ────────────────────────────────────────────────────────
 
-function ModalShell({ children }: { children: React.ReactNode }) {
+function ModalShell({
+  children,
+  titleId,
+  onClose,
+  className = 'max-w-lg',
+}: {
+  children: ReactNode;
+  titleId: string;
+  onClose: () => void;
+  className?: string;
+}) {
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-      <div role="dialog" aria-modal="true" className="bg-dark-800 border border-white/[0.08] rounded-2xl shadow-glass w-full max-w-lg max-h-[90vh] overflow-y-auto animate-fade-up">
-        {children}
-      </div>
-    </div>
+    <Dialog titleId={titleId} onClose={onClose} className={className}>
+      {children}
+    </Dialog>
   );
 }
 
@@ -89,10 +98,10 @@ function ReviewModal({
   };
 
   return (
-    <ModalShell>
+    <ModalShell titleId="review-product-title" onClose={onCancel}>
       <div className="p-6 border-b border-white/[0.06]">
         <div className="flex items-center justify-between mb-1">
-          <h2 className="text-lg font-bold text-white">Review Extracted Data</h2>
+          <h2 id="review-product-title" className="text-lg font-bold text-white">Review Extracted Data</h2>
           <span className={`text-xs px-2.5 py-1 rounded-full font-medium border ${confStyle}`}>
             {review.confidence} confidence
           </span>
@@ -218,9 +227,9 @@ function ManualModal({ onSave, onCancel, saving = false, saveError = '' }: {
   };
 
   return (
-    <ModalShell>
+    <ModalShell titleId="manual-product-title" onClose={onCancel}>
       <div className="p-6 border-b border-white/[0.06]">
-        <h2 className="text-lg font-bold text-white">Add Product Manually</h2>
+        <h2 id="manual-product-title" className="text-lg font-bold text-white">Add Product Manually</h2>
         <p className="text-sm text-gray-500 mt-0.5">Enter nutrition info from the product label</p>
       </div>
       <div className="p-6 space-y-4">
@@ -329,9 +338,9 @@ function QuickLogModal({
   };
 
   return (
-    <ModalShell>
+    <ModalShell titleId="quick-log-product-title" onClose={onClose}>
       <div className="p-6 border-b border-white/[0.06]">
-        <h2 className="text-lg font-bold text-white">Quick Log Product</h2>
+        <h2 id="quick-log-product-title" className="text-lg font-bold text-white">Quick Log Product</h2>
         <p className="text-sm text-gray-500 mt-0.5">Choose the meal and quantity for this product.</p>
       </div>
 
@@ -420,18 +429,7 @@ function ProductCard({
   const [confirming, setConfirming] = useState(false);
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={() => onSelect(product)}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onSelect(product);
-        }
-      }}
-      className="glass-card-hover rounded-2xl p-5 animate-fade-up group cursor-pointer"
-    >
+    <article className="glass-card-hover rounded-2xl p-5 animate-fade-up group">
       {/* Name + calories */}
       <div className="flex items-start justify-between mb-3">
         <div className="min-w-0 flex-1 pr-3">
@@ -527,17 +525,19 @@ function ProductCard({
               e.stopPropagation();
               setConfirming(true);
             }}
-            className="text-xs text-gray-700 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+            className="text-xs text-gray-500 hover:text-red-400 transition-colors"
           >
             Delete
           </button>
         )}
       </div>
-    </div>
+    </article>
   );
 }
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
+
+const PAGE_SIZE = 50;
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -553,23 +553,42 @@ export default function ProductsPage() {
   const [saveError, setSaveError] = useState('');
   const [deleteError, setDeleteError] = useState('');
   const [favoriteError, setFavoriteError] = useState('');
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const load = async () => {
+  const load = async (reset = true) => {
     setLoadError('');
+    if (reset) {
+      setLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
     try {
-      const r = await listProducts();
-      setProducts(sortProducts(r.data));
+      const r = await listProducts({
+        skip: reset ? 0 : products.length,
+        limit: PAGE_SIZE,
+        search: search.trim() || undefined,
+      });
+      setProducts((current) => sortProducts(reset ? r.data : [...current, ...r.data]));
+      setHasMore(r.data.length === PAGE_SIZE);
     } catch {
       setLoadError('Failed to load products. Please try again.');
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void load(true);
+    }, search.trim() ? 250 : 0);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
@@ -593,7 +612,7 @@ export default function ProductsPage() {
       await createProduct(data);
       setReview(null);
       setShowManual(false);
-      load();
+      await load(true);
     } catch (err: unknown) {
       // Inline error state — no alert() (Issue 23)
       const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
@@ -645,12 +664,6 @@ export default function ProductsPage() {
       setFavoriteError('Failed to update starred product. Please try again.');
     }
   };
-
-  const visibleProducts = products.filter((product) => {
-    if (!search.trim()) return true;
-    const query = search.toLowerCase();
-    return `${product.name} ${product.brand ?? ''}`.toLowerCase().includes(query);
-  });
 
   return (
     <Layout>
@@ -706,7 +719,7 @@ export default function ProductsPage() {
           </div>
         </div>
 
-        {products.length > 0 && (
+        {!loading && (
           <div className="animate-fade-up">
             <input
               value={search}
@@ -764,13 +777,13 @@ export default function ProductsPage() {
             <div className="w-14 h-14 glass-card rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl">⚠️</div>
             <p className="text-gray-400 text-sm mb-4">{loadError}</p>
             <button
-              onClick={() => { setLoading(true); load(); }}
+              onClick={() => { setLoading(true); void load(true); }}
               className="btn-secondary text-sm"
             >
               Retry
             </button>
           </div>
-        ) : products.length === 0 ? (
+        ) : products.length === 0 && !search.trim() ? (
           <div className="text-center py-20 animate-fade-up">
             <div className="w-16 h-16 glass-card rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl">
               📦
@@ -788,22 +801,36 @@ export default function ProductsPage() {
               </button>
             </div>
           </div>
-        ) : visibleProducts.length === 0 ? (
+        ) : products.length === 0 ? (
           <div className="glass-card rounded-2xl p-6 text-sm text-gray-400 animate-fade-up">
             No products match your search.
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {visibleProducts.map((p) => (
-              <ProductCard
-                key={p.id}
-                product={p}
-                onDelete={handleDelete}
-                onSelect={setSelectedProduct}
-                onToggleFavorite={handleToggleFavorite}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {products.map((p) => (
+                <ProductCard
+                  key={p.id}
+                  product={p}
+                  onDelete={handleDelete}
+                  onSelect={setSelectedProduct}
+                  onToggleFavorite={handleToggleFavorite}
+                />
+              ))}
+            </div>
+            {hasMore && (
+              <div className="flex justify-center pt-2">
+                <button
+                  type="button"
+                  onClick={() => void load(false)}
+                  disabled={loadingMore}
+                  className="btn-secondary text-sm px-5"
+                >
+                  {loadingMore ? 'Loading...' : 'Load more'}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </Layout>

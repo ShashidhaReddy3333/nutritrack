@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { listProducts } from '../api/products';
+import Dialog from './Dialog';
+import { listAllProducts } from '../api/products';
 import { updateMeal } from '../api/meals';
 import type { MealEntryOut, MealItemIn } from '../api/meals';
 import type { Product, MealType } from '../types';
@@ -40,8 +41,8 @@ export default function MealEditorModal({
   );
 
   useEffect(() => {
-    listProducts()
-      .then((response) => setProducts(response.data))
+    listAllProducts()
+      .then((data) => setProducts(data))
       .catch(() => setError('Failed to load products'))
       .finally(() => setLoadingProducts(false));
   }, []);
@@ -86,10 +87,9 @@ export default function MealEditorModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-      <div role="dialog" aria-modal="true" className="bg-dark-800 border border-white/[0.08] rounded-2xl shadow-glass w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-fade-up">
+    <Dialog titleId="meal-editor-title" onClose={onClose} className="max-w-2xl">
         <div className="p-6 border-b border-white/[0.06]">
-          <h2 className="text-lg font-bold text-white">Edit Meal</h2>
+          <h2 id="meal-editor-title" className="text-lg font-bold text-white">Edit Meal</h2>
           <p className="text-sm text-gray-500 mt-0.5">Update the meal type, text, products, quantity, or unit.</p>
         </div>
 
@@ -200,7 +200,6 @@ export default function MealEditorModal({
             {saving ? 'Saving...' : 'Save changes'}
           </button>
         </div>
-      </div>
-    </div>
+    </Dialog>
   );
 }

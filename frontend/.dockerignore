@@ -1,6 +1,8 @@
-node_modules
-dist
-test-results
-playwright-report
+node_modules/
+dist/
+test-results/
+playwright-report/
+.cache/
 .env
+*.env
 npm-debug.log*

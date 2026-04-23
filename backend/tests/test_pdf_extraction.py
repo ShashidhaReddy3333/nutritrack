@@ -7,10 +7,12 @@ import pytest
 from unittest.mock import patch, MagicMock
 
 from app.services.pdf_extraction import (
+    PdfSafetyError,
     _extract_with_pdfplumber,
     _extract_with_pymupdf,
     extract_text_from_pdf,
     assess_confidence,
+    validate_pdf_limits,
 )
 
 
@@ -93,7 +95,8 @@ class TestExtractTextFallbackChain:
     def test_uses_pdfplumber_first(self):
         good_text = "Nutrition Facts Serving size 30g Calories 120 Protein 24g Carbs 3g Fat 1g"
 
-        with patch("app.services.pdf_extraction._extract_with_pdfplumber", return_value=good_text) as mock_pb, \
+        with patch("app.services.pdf_extraction.validate_pdf_limits", return_value=None), \
+             patch("app.services.pdf_extraction._extract_with_pdfplumber", return_value=good_text) as mock_pb, \
              patch("app.services.pdf_extraction._extract_with_pymupdf") as mock_mu, \
              patch("app.services.pdf_extraction._extract_with_ocr") as mock_ocr:
 
@@ -106,7 +109,8 @@ class TestExtractTextFallbackChain:
     def test_falls_back_to_pymupdf(self):
         good_text = "Nutrition Facts Serving size 30g Calories 120 Protein 24g Carbs 3g Fat 1g"
 
-        with patch("app.services.pdf_extraction._extract_with_pdfplumber", return_value=None), \
+        with patch("app.services.pdf_extraction.validate_pdf_limits", return_value=None), \
+             patch("app.services.pdf_extraction._extract_with_pdfplumber", return_value=None), \
              patch("app.services.pdf_extraction._extract_with_pymupdf", return_value=good_text), \
              patch("app.services.pdf_extraction._extract_with_ocr") as mock_ocr:
 
@@ -117,7 +121,8 @@ class TestExtractTextFallbackChain:
     def test_falls_back_to_ocr(self):
         good_text = "Nutrition Facts Serving size 30g Calories 120 Protein 24g Carbs 3g Fat 1g"
 
-        with patch("app.services.pdf_extraction._extract_with_pdfplumber", return_value=None), \
+        with patch("app.services.pdf_extraction.validate_pdf_limits", return_value=None), \
+             patch("app.services.pdf_extraction._extract_with_pdfplumber", return_value=None), \
              patch("app.services.pdf_extraction._extract_with_pymupdf", return_value=None), \
              patch("app.services.pdf_extraction._extract_with_ocr", return_value=good_text):
 
@@ -125,12 +130,26 @@ class TestExtractTextFallbackChain:
             assert method == "ocr"
 
     def test_raises_when_all_fail(self):
-        with patch("app.services.pdf_extraction._extract_with_pdfplumber", return_value=None), \
+        with patch("app.services.pdf_extraction.validate_pdf_limits", return_value=None), \
+             patch("app.services.pdf_extraction._extract_with_pdfplumber", return_value=None), \
              patch("app.services.pdf_extraction._extract_with_pymupdf", return_value=None), \
              patch("app.services.pdf_extraction._extract_with_ocr", return_value=None):
 
             with pytest.raises(ValueError, match="Could not extract"):
                 extract_text_from_pdf(b"unreadable")
+
+    def test_rejects_encrypted_pdf(self):
+        mock_doc = MagicMock()
+        mock_doc.__enter__.return_value = mock_doc
+        mock_doc.__exit__.return_value = False
+        mock_doc.is_encrypted = True
+        mock_doc.needs_pass = True
+
+        fake_fitz = MagicMock()
+        fake_fitz.open.return_value = mock_doc
+        with patch.dict("sys.modules", {"fitz": fake_fitz}):
+            with pytest.raises(PdfSafetyError, match="Encrypted"):
+                validate_pdf_limits(b"%PDF")
 
 
 # ── Confidence heuristic ──────────────────────────────────────────────────────

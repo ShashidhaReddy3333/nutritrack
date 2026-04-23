@@ -7,16 +7,54 @@ on:
 jobs:
   backend:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: nutritrack
+          POSTGRES_PASSWORD: ci-postgres-password
+          POSTGRES_DB: nutritrack
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U nutritrack"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     defaults:
       run:
         working-directory: backend
+    env:
+      APP_ENV: test
+      DATABASE_URL: postgresql://nutritrack:ci-postgres-password@localhost:5432/nutritrack
+      POSTGRES_PASSWORD: ci-postgres-password
+      SECRET_KEY: ci-secret-key-with-enough-entropy-for-tests
+      CORS_ORIGINS: http://localhost:5173
+      COOKIE_SECURE: "false"
+      PUBLIC_APP_URL: http://localhost:5173
+      RATE_LIMIT_STORAGE_URI: redis://localhost:6379/0
+      OLLAMA_BASE_URL: http://localhost:11434/v1
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
       - run: python -m pip install --upgrade pip
       - run: pip install -r requirements.txt
+      - run: alembic upgrade head
+      - run: pip check
+      - run: pip-audit -r requirements.txt
       - run: pytest
 
   frontend:
@@ -28,8 +66,53 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "20.20.2"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
+      - run: npm audit --audit-level=moderate
+      - run: npm run lint
       - run: npm run build
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.20.2"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Start backend stack
+        run: docker compose -f docker-compose.dev.yml up -d --build db backend
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm ci
+      - name: Install Playwright browser
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+      - name: Run Playwright
+        working-directory: frontend
+        env:
+          VITE_API_PROXY_TARGET: http://127.0.0.1:8000
+        run: npm run test:e2e
+      - name: Stop stack
+        if: always()
+        run: docker compose -f docker-compose.dev.yml down -v
+
+  docker-build:
+    runs-on: ubuntu-latest
+    env:
+      POSTGRES_PASSWORD: ci-postgres-password
+      SECRET_KEY: ci-secret-key-with-enough-entropy-for-docker-builds
+      CORS_ORIGINS: https://nutritrack.example
+      PUBLIC_APP_URL: https://nutritrack.example
+      SMTP_HOST: smtp.example
+      SMTP_USERNAME: ci-user
+      SMTP_PASSWORD: ci-password
+      SMTP_FROM: no-reply@nutritrack.example
+      OLLAMA_BASE_URL: https://llm.example/v1
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose config
+      - run: docker compose build backend frontend

@@ -90,6 +90,18 @@ class TestDateBoundary:
         assert resp.status_code == 200
         assert len(resp.json()) == 1
 
+    def test_date_filter_uses_user_timezone_boundaries(self, auth_client, product_in_db):
+        logged_at = "2026-01-02T04:30:00+00:00"  # 2026-01-01 23:30 in America/Toronto
+        create_meal(auth_client, product_in_db["id"], logged_at=logged_at)
+
+        toronto_day = auth_client.get("/api/v1/meals?date_filter=2026-01-01&timezone=America/Toronto")
+        assert toronto_day.status_code == 200
+        assert len(toronto_day.json()) == 1
+
+        utc_next_day = auth_client.get("/api/v1/meals?date_filter=2026-01-02&timezone=America/Toronto")
+        assert utc_next_day.status_code == 200
+        assert utc_next_day.json() == []
+
     def test_meal_at_end_of_day_included(self, auth_client, product_in_db):
         """Meal logged at 23:59:59.999 must appear in that day's results (Issue 16)."""
         today = date.today()

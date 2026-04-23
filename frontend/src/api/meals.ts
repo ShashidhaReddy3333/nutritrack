@@ -1,4 +1,5 @@
 import api from './client';
+import { getBrowserTimezone } from '../utils/timezone';
 
 export interface ParsedItem {
   item: string;
@@ -35,6 +36,7 @@ export interface MealItemOut {
   id: string;
   product_id?: string;
   product_name?: string;
+  product_brand?: string;
   quantity: number;
   unit: string;
   resolved_nutrients_json?: Record<string, number>;
@@ -67,6 +69,17 @@ export interface WeeklyDay {
   protein_g: number;
   carbs_g: number;
   fat_g: number;
+  sugar_g?: number;
+  fiber_g?: number;
+  sodium_mg?: number;
+}
+
+export interface MealListParams {
+  date_filter?: string;
+  search?: string;
+  timezone?: string;
+  skip?: number;
+  limit?: number;
 }
 
 export const parseMeal = (raw_text: string) =>
@@ -86,16 +99,20 @@ export const updateMeal = (id: string, payload: {
   logged_at?: string;
 }) => api.patch<MealEntryOut>(`/meals/${id}`, payload);
 
-export const listMeals = (dateFilter?: string) =>
-  api.get<MealEntryOut[]>('/meals', { params: dateFilter ? { date_filter: dateFilter } : {} });
-
-export const getTodayMeals = () => api.get<MealEntryOut[]>('/meals/today');
-
-export const getDailyTotals = (dateFilter?: string) =>
-  api.get<ResolvedNutrients>('/meals/daily-totals', {
-    params: dateFilter ? { date_filter: dateFilter } : {},
+export const listMeals = (params: MealListParams = {}) =>
+  api.get<MealEntryOut[]>('/meals', {
+    params: { timezone: getBrowserTimezone(), ...params },
   });
 
-export const getWeeklyTotals = () => api.get<WeeklyDay[]>('/meals/weekly-totals');
+export const getTodayMeals = (timezone = getBrowserTimezone()) =>
+  api.get<MealEntryOut[]>('/meals/today', { params: { timezone } });
+
+export const getDailyTotals = (dateFilter?: string, timezone = getBrowserTimezone()) =>
+  api.get<ResolvedNutrients>('/meals/daily-totals', {
+    params: { ...(dateFilter ? { date_filter: dateFilter } : {}), timezone },
+  });
+
+export const getWeeklyTotals = (timezone = getBrowserTimezone()) =>
+  api.get<WeeklyDay[]>('/meals/weekly-totals', { params: { timezone } });
 
 export const deleteMeal = (id: string) => api.delete(`/meals/${id}`);

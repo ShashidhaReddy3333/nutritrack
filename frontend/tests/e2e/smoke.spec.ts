@@ -6,8 +6,9 @@ test.describe('NutriTrack smoke flows', () => {
 
     await page.goto('/register')
     await page.getByLabel('Email address').fill(email)
-    await page.getByLabel('Password', { exact: true }).fill('smoketest123')
-    await page.getByLabel('Confirm password').fill('smoketest123')
+    await page.getByLabel('Password', { exact: true }).fill('SmokePass123!')
+    await page.getByLabel('Confirm password').fill('SmokePass123!')
+    await page.getByLabel(/I agree to the/).check()
     await page.getByRole('button', { name: 'Create account' }).click()
 
     await expect(page).toHaveURL(/\/profile\/setup$/)
@@ -23,9 +24,11 @@ test.describe('NutriTrack smoke flows', () => {
   })
 
   test('demo user can log in and see seeded products', async ({ page }) => {
+    const demoPassword = process.env.SEED_DEMO_PASSWORD || 'nutritrack-dev-only-change-me'
+
     await page.goto('/login')
     await page.getByLabel('Email address').fill('demo@nutritrack.app')
-    await page.getByLabel('Password').fill('nutritrack123')
+    await page.getByLabel('Password').fill(demoPassword)
     await page.getByRole('button', { name: 'Sign in' }).click()
 
     await expect(page).toHaveURL(/\/dashboard$/)

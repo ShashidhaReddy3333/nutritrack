@@ -6,9 +6,13 @@ so that `alembic upgrade head` works both inside Docker and locally.
 
 from logging.config import fileConfig
 import os
+from pathlib import Path
+import sys
 
 from sqlalchemy import engine_from_config, pool
 from alembic import context
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 # ── Pull in all models so autogenerate can detect them ───────────────────────
 from app.core.database import Base  # noqa: F401

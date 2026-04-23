@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { parseMeal, createMealEntry } from '../api/meals';
 import type { ParsedItemWithCandidates, MealItemIn } from '../api/meals';
-import { listProducts } from '../api/products';
+import { listAllProducts } from '../api/products';
 import type { Product, MealType } from '../types';
 import { formatServingLabel, getSuggestedMealType, sortProducts } from '../utils/mealUtils';
 
@@ -197,8 +197,8 @@ export default function LogMealPage() {
   const [saveError, setSaveError] = useState('');
 
   useEffect(() => {
-    listProducts()
-      .then((response) => setProducts(sortProducts(response.data)))
+    listAllProducts()
+      .then((data) => setProducts(sortProducts(data)))
       .catch(() => {})
       .finally(() => setProductsLoading(false));
   }, []);

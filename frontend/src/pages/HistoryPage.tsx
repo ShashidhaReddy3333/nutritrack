@@ -17,6 +17,9 @@ import Layout from '../components/Layout';
 import { listMeals } from '../api/meals';
 import type { MealEntryOut, ResolvedNutrients } from '../api/meals';
 import MealEditorModal from '../components/MealEditorModal';
+import { localDateKey } from '../utils/timezone';
+
+const PAGE_SIZE = 200;
 
 const MEAL_META = {
   breakfast: { label: 'Breakfast', color: '#fb923c' },
@@ -57,7 +60,7 @@ function sumTotals(base: ResolvedNutrients, add?: ResolvedNutrients): ResolvedNu
 }
 
 function dateKey(loggedAt: string) {
-  return loggedAt.slice(0, 10);
+  return localDateKey(loggedAt);
 }
 
 function prettyDate(value: string) {
@@ -109,26 +112,39 @@ export default function HistoryPage() {
   const [meals, setMeals] = useState<MealEntryOut[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
+  const [selectedDate, setSelectedDate] = useState(localDateKey(new Date()));
   const [editingEntry, setEditingEntry] = useState<MealEntryOut | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  const loadMeals = useCallback(() => {
-    listMeals()
+  const loadMeals = useCallback((reset = true) => {
+    if (reset) {
+      setLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
+    listMeals({ skip: reset ? 0 : meals.length, limit: PAGE_SIZE })
       .then((response) => {
         const data = response.data;
-        setMeals(data);
+        const nextMeals = reset ? data : [...meals, ...data];
+        setMeals(nextMeals);
+        setHasMore(data.length === PAGE_SIZE);
 
-        const latestDate = data[0] ? dateKey(data[0].logged_at) : new Date().toISOString().slice(0, 10);
+        const latestDate = nextMeals[0] ? dateKey(nextMeals[0].logged_at) : localDateKey(new Date());
         const latestYear = Number.parseInt(latestDate.slice(0, 4), 10);
         setSelectedDate(latestDate);
         setSelectedYear(latestYear);
       })
-      .finally(() => setLoading(false));
-  }, []);
+      .finally(() => {
+        setLoading(false);
+        setLoadingMore(false);
+      });
+  }, [meals]);
 
   useEffect(() => {
-    loadMeals();
-  }, [loadMeals]);
+    loadMeals(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const summariesByDate: Record<string, DailySummary> = {};
   for (const meal of meals) {
@@ -203,7 +219,7 @@ export default function HistoryPage() {
         <MealEditorModal
           entry={editingEntry}
           onClose={() => setEditingEntry(null)}
-          onSaved={loadMeals}
+          onSaved={() => loadMeals(true)}
         />
       )}
       <div className="space-y-6">
@@ -409,6 +425,19 @@ export default function HistoryPage() {
                 </div>
               </div>
             </div>
+
+            {hasMore && (
+              <div className="flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => loadMeals(false)}
+                  disabled={loadingMore}
+                  className="btn-secondary text-sm px-5"
+                >
+                  {loadingMore ? 'Loading...' : 'Load older meals'}
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>

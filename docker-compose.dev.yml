@@ -1,0 +1,68 @@
+services:
+  db:
+    image: postgres:16-alpine@sha256:4e6e670bb069649261c9c18031f0aded7bb249a5b6664ddec29c013a89310d50
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: nutritrack
+      POSTGRES_PASSWORD: nutritrack-dev-only
+      POSTGRES_DB: nutritrack
+    ports:
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5432}:5432"
+    volumes:
+      - pgdata-dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nutritrack"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    build: ./backend
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_ENV: development
+      DATABASE_URL: postgresql://nutritrack:nutritrack-dev-only@db:5432/nutritrack
+      SECRET_KEY: dev-secret-change-in-production
+    command: alembic upgrade head
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    ports:
+      - "127.0.0.1:${BACKEND_HOST_PORT:-8000}:8000"
+    environment:
+      APP_ENV: development
+      DEBUG: "true"
+      DATABASE_URL: postgresql://nutritrack:nutritrack-dev-only@db:5432/nutritrack
+      POSTGRES_PASSWORD: nutritrack-dev-only
+      SECRET_KEY: dev-secret-change-in-production
+      CORS_ORIGINS: "${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}"
+      COOKIE_SECURE: "false"
+      COOKIE_SAMESITE: lax
+      PUBLIC_APP_URL: http://localhost:5173
+      RATE_LIMIT_STORAGE_URI: memory://
+      OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-http://host.docker.internal:11434/v1}"
+      OLLAMA_MODEL: "${OLLAMA_MODEL:-llama3.2:3b}"
+      CHROMA_PERSIST_DIR: /data/chroma
+      UPLOAD_DIR: /data/uploads
+    volumes:
+      - nutritrack_data-dev:/data
+    command: sh -c "python seed.py && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${FRONTEND_HOST_PORT:-5173}:8080"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata-dev:
+  nutritrack_data-dev:

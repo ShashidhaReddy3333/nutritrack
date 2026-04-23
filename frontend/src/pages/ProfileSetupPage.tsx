@@ -2,6 +2,7 @@ import { useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createProfile } from '../api/profile';
 import type { Sex, ActivityLevel, Goal } from '../types';
+import { getBrowserTimezone } from '../utils/timezone';
 
 const ACTIVITY_OPTIONS: { value: ActivityLevel; label: string; desc: string; icon: string }[] = [
   { value: 'sedentary', label: 'Sedentary', desc: 'Little or no exercise', icon: '🪑' },
@@ -41,6 +42,7 @@ export default function ProfileSetupPage() {
         height_cm: parseFloat(height),
         activity_level: activity,
         goal,
+        timezone: getBrowserTimezone(),
       });
       navigate('/dashboard');
     } catch (err: unknown) {
@@ -102,16 +104,18 @@ export default function ProfileSetupPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="label-dark">Age</label>
+                  <label htmlFor="profile-age" className="label-dark">Age</label>
                   <input
+                    id="profile-age"
                     type="number" min={10} max={100} required
                     value={age} onChange={(e) => setAge(e.target.value)}
                     className="input-dark" placeholder="28"
                   />
                 </div>
                 <div>
-                  <label className="label-dark">Sex</label>
+                  <label htmlFor="profile-sex" className="label-dark">Sex</label>
                   <select
+                    id="profile-sex"
                     value={sex} onChange={(e) => setSex(e.target.value as Sex)}
                     className="input-dark"
                   >
@@ -121,16 +125,18 @@ export default function ProfileSetupPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="label-dark">Weight (kg)</label>
+                  <label htmlFor="profile-weight" className="label-dark">Weight (kg)</label>
                   <input
+                    id="profile-weight"
                     type="number" min={30} max={300} step={0.1} required
                     value={weight} onChange={(e) => setWeight(e.target.value)}
                     className="input-dark" placeholder="75"
                   />
                 </div>
                 <div>
-                  <label className="label-dark">Height (cm)</label>
+                  <label htmlFor="profile-height" className="label-dark">Height (cm)</label>
                   <input
+                    id="profile-height"
                     type="number" min={100} max={250} required
                     value={height} onChange={(e) => setHeight(e.target.value)}
                     className="input-dark" placeholder="175"

@@ -1,17 +1,13 @@
-// ── Auth ──────────────────────────────────────────────────────────────────────
-
-export interface TokenResponse {
-  access_token: string;
-  token_type: string;
-}
-
 export interface UserOut {
   id: string;
   email: string;
   created_at: string;
 }
 
-// ── Profile ───────────────────────────────────────────────────────────────────
+export interface SessionResponse {
+  authenticated: boolean;
+  user: UserOut;
+}
 
 export type Sex = 'male' | 'female' | 'other';
 export type ActivityLevel =
@@ -27,15 +23,15 @@ export interface DailyTargets {
   protein_g: number;
   carbs_g: number;
   fat_g: number;
-  sugar_g?: number;
-  fiber_g?: number;
-  sodium_mg?: number;
+  sugar_g?: number | null;
+  fiber_g?: number | null;
+  sodium_mg?: number | null;
 }
 
 export interface BodyCompositionReport {
-  bwi_result?: string;
-  bio_age?: string;
-  waist_to_hip_ratio?: string;
+  bwi_result?: string | null;
+  bio_age?: string | null;
+  waist_to_hip_ratio?: string | null;
   summary: Record<string, string>;
   body_composition: Record<string, string>;
   segmental_analysis: Record<string, string>;
@@ -50,9 +46,10 @@ export interface ProfileOut {
   height_cm: number;
   activity_level: ActivityLevel;
   goal: Goal;
-  daily_targets_json?: DailyTargets;
-  calculated_targets?: DailyTargets;
-  body_composition_json?: BodyCompositionReport;
+  timezone: string;
+  daily_targets_json?: DailyTargets | null;
+  calculated_targets?: DailyTargets | null;
+  body_composition_json?: BodyCompositionReport | null;
 }
 
 export interface ProfileCreate {
@@ -62,33 +59,32 @@ export interface ProfileCreate {
   height_cm: number;
   activity_level: ActivityLevel;
   goal: Goal;
+  timezone: string;
   override_targets?: DailyTargets | null;
-  body_composition_report?: BodyCompositionReport;
+  body_composition_report?: BodyCompositionReport | null;
 }
 
 export interface ProfileUpdate extends Partial<ProfileCreate> {}
-
-// ── Products (stub — Phase 2) ─────────────────────────────────────────────────
 
 export interface Product {
   id: string;
   user_id: string;
   name: string;
-  brand?: string;
+  brand?: string | null;
   serving_size_g: number;
-  serving_quantity?: number;
-  serving_unit?: string;
+  serving_quantity?: number | null;
+  serving_unit?: string | null;
   is_favorite: boolean;
   calories: number;
   protein_g: number;
   carbs_g: number;
   fat_g: number;
-  sugar_g?: number;
-  fiber_g?: number;
-  sodium_mg?: number;
+  sugar_g?: number | null;
+  fiber_g?: number | null;
+  sodium_mg?: number | null;
   created_at: string;
+  has_source_pdf?: boolean;
+  chroma_indexed?: boolean;
 }
-
-// ── Meals (stub — Phase 3) ────────────────────────────────────────────────────
 
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';

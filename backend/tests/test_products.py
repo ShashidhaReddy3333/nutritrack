@@ -48,6 +48,14 @@ class TestListProducts:
         assert resp2.status_code == 200
         assert len(resp2.json()) == 1
 
+    def test_list_products_search(self, auth_client, sample_product_payload):
+        auth_client.post("/api/v1/products", json={**sample_product_payload, "name": "Greek Yogurt"})
+        auth_client.post("/api/v1/products", json={**sample_product_payload, "name": "Almond Butter"})
+
+        resp = auth_client.get("/api/v1/products?search=yogurt")
+        assert resp.status_code == 200
+        assert [item["name"] for item in resp.json()] == ["Greek Yogurt"]
+
     def test_products_isolated_between_users(self, client, sample_product_payload):
         """User A cannot see User B's products."""
         # Register user A
@@ -86,6 +94,15 @@ class TestUpdateProduct:
         resp = auth_client.patch(f"/api/v1/products/{product_id}", json={"calories": 200.0})
         assert resp.status_code == 200
         assert resp.json()["calories"] == 200.0
+
+    def test_update_product_allows_clearing_optional_fields(self, auth_client, sample_product_payload):
+        create_resp = auth_client.post("/api/v1/products", json=sample_product_payload)
+        product_id = create_resp.json()["id"]
+
+        resp = auth_client.patch(f"/api/v1/products/{product_id}", json={"brand": None, "sugar_g": None})
+        assert resp.status_code == 200
+        assert resp.json()["brand"] is None
+        assert resp.json()["sugar_g"] is None
 
 
 class TestDeleteProduct:

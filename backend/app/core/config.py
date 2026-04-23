@@ -9,7 +9,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
+PROJECT_ROOT = BACKEND_DIR.parent if BACKEND_DIR.name == "backend" else BACKEND_DIR
 DEFAULT_DATA_DIR = PROJECT_ROOT / ".local"
 
 _FORBIDDEN_KEYS = {
@@ -155,8 +155,8 @@ def assert_production_settings() -> None:
     if not db_password or db_password in {"nutritrack", "CHANGE_ME", "changeme", "password"}:
         raise RuntimeError("POSTGRES_PASSWORD/DATABASE_URL must use a strong non-default password in production")
 
-    if not settings.OLLAMA_BASE_URL.strip():
-        raise RuntimeError("OLLAMA_BASE_URL must be configured in production")
+    if not settings.OLLAMA_BASE_URL.strip() or _is_local_url(settings.OLLAMA_BASE_URL):
+        raise RuntimeError("OLLAMA_BASE_URL must be configured to a non-local production endpoint")
 
     if settings.RATE_LIMIT_STORAGE_URI.startswith("memory://"):
         raise RuntimeError("RATE_LIMIT_STORAGE_URI must use Redis in production")
@@ -166,5 +166,5 @@ def assert_production_settings() -> None:
     if not settings.PUBLIC_APP_URL.startswith("https://"):
         raise RuntimeError("PUBLIC_APP_URL must use HTTPS in production")
 
-    if not settings.SMTP_HOST:
-        raise RuntimeError("SMTP_HOST must be configured in production")
+    if not settings.SMTP_HOST or not settings.SMTP_FROM:
+        raise RuntimeError("SMTP_HOST and SMTP_FROM must be configured in production")

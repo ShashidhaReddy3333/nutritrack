@@ -3,6 +3,7 @@ Auth endpoint tests — covers register, login, /me, token expiry, enumeration r
 """
 
 import pytest
+from app.api import auth as auth_api
 
 
 class TestRegister:
@@ -14,8 +15,9 @@ class TestRegister:
         })
         assert resp.status_code == 201
         data = resp.json()
-        assert "access_token" in data
-        assert data["token_type"] == "bearer"
+        assert "access_token" not in data
+        assert data["authenticated"] is True
+        assert data["user"]["email"] == "new@example.com"
 
     def test_register_sets_auth_cookie(self, client):
         resp = client.post("/api/v1/auth/register", json={
@@ -68,7 +70,10 @@ class TestLogin:
             "password": registered_user["password"],
         })
         assert resp.status_code == 200
-        assert "access_token" in resp.json()
+        data = resp.json()
+        assert "access_token" not in data
+        assert data["authenticated"] is True
+        assert data["user"]["email"] == registered_user["email"]
 
     def test_login_sets_cookies(self, client, registered_user):
         resp = client.post("/api/v1/auth/login", json={
@@ -132,8 +137,19 @@ class TestRefreshToken:
 
         refresh_resp = client.post("/api/v1/auth/refresh")
         assert refresh_resp.status_code == 200
-        assert "access_token" in refresh_resp.json()
+        assert "access_token" not in refresh_resp.json()
+        assert refresh_resp.json()["authenticated"] is True
 
     def test_refresh_without_cookie_fails(self, client):
         resp = client.post("/api/v1/auth/refresh")
         assert resp.status_code == 401
+
+
+class TestForgotPassword:
+    def test_smtp_failure_still_returns_202(self, client, registered_user, monkeypatch):
+        def fail_send(email: str, reset_url: str) -> None:
+            raise OSError("smtp down")
+
+        monkeypatch.setattr(auth_api, "_send_password_reset_email", fail_send)
+        resp = client.post("/api/v1/auth/forgot-password", json={"email": registered_user["email"]})
+        assert resp.status_code == 202

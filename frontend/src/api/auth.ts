@@ -1,15 +1,15 @@
 import api from './client';
-import type { TokenResponse, UserOut } from '../types';
+import type { SessionResponse, UserOut } from '../types';
 
 export const register = (email: string, password: string, accept_privacy: boolean) =>
-  api.post<TokenResponse>('/auth/register', { email, password, accept_privacy });
+  api.post<SessionResponse>('/auth/register', { email, password, accept_privacy });
 
 export const login = (email: string, password: string) =>
-  api.post<TokenResponse>('/auth/login', { email, password });
+  api.post<SessionResponse>('/auth/login', { email, password });
 
 export const logout = () => api.post('/auth/logout');
 
-export const refreshToken = () => api.post<TokenResponse>('/auth/refresh');
+export const refreshToken = () => api.post<SessionResponse>('/auth/refresh');
 
 export const getMe = () => api.get<UserOut>('/auth/me');
 

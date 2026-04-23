@@ -65,18 +65,27 @@ def upgrade() -> None:
             unique=True,
         ),
         sa.Column("age", sa.Integer(), nullable=False),
-        sa.Column("sex", sa.Enum("male", "female", "other", name="sex"), nullable=False),
+        sa.Column(
+            "sex",
+            postgresql.ENUM("male", "female", "other", name="sex", create_type=False),
+            nullable=False,
+        ),
         sa.Column("weight_kg", sa.Float(), nullable=False),
         sa.Column("height_cm", sa.Float(), nullable=False),
         sa.Column(
             "activity_level",
-            sa.Enum(
+            postgresql.ENUM(
                 "sedentary", "lightly_active", "moderately_active", "very_active", "extra_active",
                 name="activitylevel",
+                create_type=False,
             ),
             nullable=False,
         ),
-        sa.Column("goal", sa.Enum("maintain", "cut", "bulk", name="goal"), nullable=False),
+        sa.Column(
+            "goal",
+            postgresql.ENUM("maintain", "cut", "bulk", name="goal", create_type=False),
+            nullable=False,
+        ),
         sa.Column("daily_targets_json", postgresql.JSON(astext_type=sa.Text()), nullable=True),
         sa.Column("body_composition_json", postgresql.JSON(astext_type=sa.Text()), nullable=True),
         sa.Column(
@@ -137,7 +146,7 @@ def upgrade() -> None:
         ),
         sa.Column(
             "meal_type",
-            sa.Enum("breakfast", "lunch", "dinner", "snack", name="mealtype"),
+            postgresql.ENUM("breakfast", "lunch", "dinner", "snack", name="mealtype", create_type=False),
             nullable=False,
         ),
         sa.Column(

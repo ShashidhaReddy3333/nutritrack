@@ -77,6 +77,7 @@ def run():
             height_cm=180.0,
             activity_level=ActivityLevel.moderately_active,
             goal=Goal.maintain,
+            timezone="UTC",
         )
         db.add(profile)
         db.flush()

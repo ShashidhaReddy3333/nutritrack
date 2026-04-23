@@ -9,7 +9,7 @@ export default function PrivacyPage() {
             Back
           </Link>
           <h1 className="text-3xl font-bold text-white mt-6">Privacy Policy</h1>
-          <p className="text-sm text-gray-500 mt-2">Last updated April 21, 2026</p>
+          <p className="text-sm text-gray-500 mt-2">Last updated April 22, 2026</p>
         </div>
 
         <section className="space-y-3">
@@ -39,8 +39,18 @@ export default function PrivacyPage() {
         <section className="space-y-3">
           <h2 className="text-lg font-semibold text-white">Retention And Deletion</h2>
           <p>
-            You can delete products and meal entries in the app. Account and full data deletion
-            requests should be handled by the site operator until self-service deletion is added.
+            You can delete products, meal entries, and your full account in the profile area.
+            Account deletion permanently removes your profile, products, meal history, refresh
+            tokens, and linked account data from the primary database.
+          </p>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold text-white">Access And Portability</h2>
+          <p>
+            You can export a JSON copy of your account, profile, products, and meal data from
+            the profile area. Production operators should retain operational audit logs only as
+            long as needed for security, abuse prevention, and legal obligations.
           </p>
         </section>
       </main>
