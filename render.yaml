@@ -1,0 +1,41 @@
+services:
+  - type: web
+    name: nutritrack-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: APP_ENV
+        value: development
+      - key: DATABASE_URL
+        value: postgresql://postgres:ck0pX6NAeShTK7O5@db.csrakbrozxmbayqamdel.supabase.co:5432/postgres
+      - key: POSTGRES_PASSWORD
+        value: "ck0pX6NAeShTK7O5"
+      - key: SECRET_KEY
+        value: ec06955e1367309eb78ebdf64a4640e3156bf7c5b70892ed53df72e9a3d58330
+      - key: CORS_ORIGINS
+        value: "https://nutritrack.human-pulse.com"
+      - key: PUBLIC_APP_URL
+        value: "https://nutritrack.human-pulse.com"
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: COOKIE_SAMESITE
+        value: "lax"
+      - key: RATE_LIMIT_STORAGE_URI
+        value: "memory://"
+      - key: CHROMA_PERSIST_DIR
+        value: "/tmp/chroma"
+      - key: UPLOAD_DIR
+        value: "/tmp/uploads"
+      - key: OLLAMA_BASE_URL
+        value: ""
+      - key: OLLAMA_MODEL
+        value: "llama3.2:3b"
+      - key: SMTP_HOST
+        value: ""
+      - key: SMTP_FROM
+        value: "no-reply@human-pulse.com"
+      - key: DEBUG
+        value: "false"
