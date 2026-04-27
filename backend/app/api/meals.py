@@ -97,10 +97,14 @@ async def parse_meal(
 
         sem_results = await asyncio.to_thread(semantic_search, item_name, str(current_user.id), 5)
 
+        from sqlalchemy import or_
         keyword_hits = (
             db.query(Product)
             .filter(
-                Product.user_id == current_user.id,
+                or_(
+                    Product.user_id == current_user.id,
+                    Product.is_global == True,  # noqa: E712
+                ),
                 Product.is_deleted == False,  # noqa: E712
                 Product.name.ilike(f"%{item_name}%"),
             )
@@ -117,11 +121,15 @@ async def parse_meal(
         if not product_scores:
             candidates = []
         else:
+            from sqlalchemy import or_ as _or
             products = (
                 db.query(Product)
                 .filter(
                     Product.id.in_([uuid.UUID(pid) for pid in product_scores]),
-                    Product.user_id == current_user.id,
+                    _or(
+                        Product.user_id == current_user.id,
+                        Product.is_global == True,  # noqa: E712
+                    ),
                     Product.is_deleted == False,  # noqa: E712
                 )
                 .all()
@@ -410,13 +418,18 @@ def _replace_entry_items(
     This prevents a partial-delete if a product_id is not found (Issue 27).
     """
     # Step 1: validate all product IDs before touching existing items
+    # Allow both user's own products and global products.
+    from sqlalchemy import or_
     product_map: dict[str, Product] = {}
     for item_in in items:
         pid_str = str(item_in.product_id)
         if pid_str not in product_map:
             product = db.query(Product).filter(
                 Product.id == item_in.product_id,
-                Product.user_id == current_user.id,
+                or_(
+                    Product.user_id == current_user.id,
+                    Product.is_global == True,  # noqa: E712
+                ),
                 Product.is_deleted == False,  # noqa: E712
             ).first()
             if not product:
