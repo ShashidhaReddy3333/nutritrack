@@ -1,8 +1,7 @@
 {
   "version": 2,
-  "buildCommand": "npm install && npm run build",
-  "outputDirectory": "dist",
-  "framework": null,
+  "buildCommand": "cd frontend && npm install && npm run build",
+  "outputDirectory": "frontend/dist",
   "rewrites": [
     {"source": "/api/:path*", "destination": "https://nutritrack-api-41yg.onrender.com/api/:path*"},
     {"source": "/(.*)", "destination": "/index.html"}
