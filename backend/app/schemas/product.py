@@ -130,6 +130,7 @@ class ProductOut(BaseModel):
     fiber_g: Optional[float] = None
     sodium_mg: Optional[float] = None
     other_nutrients_json: Optional[dict[str, Any]] = None
+    is_global: bool = False
     has_source_pdf: bool = False
     chroma_indexed: bool = False
     created_at: datetime
@@ -155,6 +156,7 @@ class ProductOut(BaseModel):
             fiber_g=product.fiber_g,
             sodium_mg=product.sodium_mg,
             other_nutrients_json=product.other_nutrients_json,
+            is_global=bool(getattr(product, "is_global", False)),
             has_source_pdf=bool(product.source_pdf_path),
             chroma_indexed=product.chroma_indexed,
             created_at=product.created_at,
