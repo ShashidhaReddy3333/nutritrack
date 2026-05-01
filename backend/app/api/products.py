@@ -5,6 +5,7 @@ import uuid
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFile, File, status
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -196,15 +197,25 @@ def list_products(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """Return the user's own products AND all global products."""
     query = (
         db.query(Product)
-        .filter(Product.user_id == current_user.id)
+        .filter(
+            or_(
+                Product.user_id == current_user.id,
+                Product.is_global == True,  # noqa: E712
+            )
+        )
         .filter(Product.is_deleted == False)  # noqa: E712
     )
     if search:
         term = f"%{search.strip()}%"
         query = query.filter((Product.name.ilike(term)) | (Product.brand.ilike(term)))
-    products = query.order_by(Product.is_favorite.desc(), Product.created_at.desc()).offset(skip).limit(limit).all()
+    products = query.order_by(
+        Product.is_global.asc(),        # user products first
+        Product.is_favorite.desc(),
+        Product.name.asc(),
+    ).offset(skip).limit(limit).all()
     return [ProductOut.from_orm_safe(p) for p in products]
 
 
@@ -216,7 +227,10 @@ def get_product(
 ):
     product = db.query(Product).filter(
         Product.id == product_id,
-        Product.user_id == current_user.id,
+        or_(
+            Product.user_id == current_user.id,
+            Product.is_global == True,  # noqa: E712
+        ),
         Product.is_deleted == False,  # noqa: E712
     ).first()
     if not product:

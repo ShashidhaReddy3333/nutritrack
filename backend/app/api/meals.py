@@ -6,6 +6,7 @@ from typing import Optional, List
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.database import get_db
@@ -78,10 +79,10 @@ async def parse_meal(
     try:
         parsed_items = await parse_meal_text(payload.raw_text)
     except Exception as exc:
-        logger.error("LLM meal-parse error for user %s: %s", current_user.id, exc, exc_info=True)
+        logger.warning("Meal parse error for user %s: %s", current_user.id, exc)
         raise HTTPException(
-            status_code=502,
-            detail="AI processing failed. Please try again or add the meal manually.",
+            status_code=400,
+            detail="Could not parse any meal items. Please edit the meal text or add the meal manually.",
         )
 
     results: list[ParsedItemWithCandidates] = []
@@ -100,7 +101,10 @@ async def parse_meal(
         keyword_hits = (
             db.query(Product)
             .filter(
-                Product.user_id == current_user.id,
+                or_(
+                    Product.user_id == current_user.id,
+                    Product.is_global == True,  # noqa: E712
+                ),
                 Product.is_deleted == False,  # noqa: E712
                 Product.name.ilike(f"%{item_name}%"),
             )
@@ -121,7 +125,10 @@ async def parse_meal(
                 db.query(Product)
                 .filter(
                     Product.id.in_([uuid.UUID(pid) for pid in product_scores]),
-                    Product.user_id == current_user.id,
+                    or_(
+                        Product.user_id == current_user.id,
+                        Product.is_global == True,  # noqa: E712
+                    ),
                     Product.is_deleted == False,  # noqa: E712
                 )
                 .all()
@@ -410,13 +417,17 @@ def _replace_entry_items(
     This prevents a partial-delete if a product_id is not found (Issue 27).
     """
     # Step 1: validate all product IDs before touching existing items
+    # Allow both user's own products and global products.
     product_map: dict[str, Product] = {}
     for item_in in items:
         pid_str = str(item_in.product_id)
         if pid_str not in product_map:
             product = db.query(Product).filter(
                 Product.id == item_in.product_id,
-                Product.user_id == current_user.id,
+                or_(
+                    Product.user_id == current_user.id,
+                    Product.is_global == True,  # noqa: E712
+                ),
                 Product.is_deleted == False,  # noqa: E712
             ).first()
             if not product:

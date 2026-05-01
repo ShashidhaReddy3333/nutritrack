@@ -125,42 +125,25 @@ function ReviewModal({
           </div>
           <div>
             <label className="label-dark">Serving quantity</label>
-            <input
-              type="number"
-              step="0.1"
-              min="0"
-              value={servingQuantity}
+            <input type="number" step="0.1" min="0" value={servingQuantity}
               onChange={(e) => setServingQuantity(e.target.value)}
-              className="input-dark"
-              placeholder="e.g. 2"
-            />
+              className="input-dark" placeholder="e.g. 2" />
           </div>
           <div>
             <label className="label-dark">Serving unit</label>
-            <input
-              value={servingUnit}
-              onChange={(e) => setServingUnit(e.target.value)}
-              className="input-dark"
-              placeholder="e.g. egg, slice"
-            />
+            <input value={servingUnit} onChange={(e) => setServingUnit(e.target.value)}
+              className="input-dark" placeholder="e.g. egg, slice" />
           </div>
           {NUM_FIELDS.map((f) => (
             <div key={String(f.key)}>
-              <label className="label-dark">
-                {f.label} ({f.unit}){f.required && ' *'}
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                min="0"
+              <label className="label-dark">{f.label} ({f.unit}){f.required && ' *'}</label>
+              <input type="number" step="0.1" min="0"
                 value={values[String(f.key)]}
                 onChange={(e) => setValues((v) => ({ ...v, [String(f.key)]: e.target.value }))}
-                className="input-dark"
-              />
+                className="input-dark" />
             </div>
           ))}
         </div>
-
         <details className="text-xs text-gray-600 cursor-pointer group">
           <summary className="hover:text-gray-400 transition-colors">Raw extracted text snippet</summary>
           <pre className="mt-2 bg-dark-900/60 border border-white/[0.05] rounded-xl p-3 whitespace-pre-wrap text-gray-500 max-h-32 overflow-y-auto font-mono text-[11px]">
@@ -244,24 +227,13 @@ function ManualModal({ onSave, onCancel, saving = false, saveError = '' }: {
           </div>
           <div>
             <label className="label-dark">Serving quantity</label>
-            <input
-              type="number"
-              step="0.1"
-              min="0"
-              value={servingQuantity}
-              onChange={(e) => setServingQuantity(e.target.value)}
-              className="input-dark"
-              placeholder="e.g. 2"
-            />
+            <input type="number" step="0.1" min="0" value={servingQuantity}
+              onChange={(e) => setServingQuantity(e.target.value)} className="input-dark" placeholder="e.g. 2" />
           </div>
           <div>
             <label className="label-dark">Serving unit</label>
-            <input
-              value={servingUnit}
-              onChange={(e) => setServingUnit(e.target.value)}
-              className="input-dark"
-              placeholder="e.g. egg, slice"
-            />
+            <input value={servingUnit} onChange={(e) => setServingUnit(e.target.value)}
+              className="input-dark" placeholder="e.g. egg, slice" />
           </div>
           {NUM_FIELDS.map((f) => (
             <div key={String(f.key)}>
@@ -319,13 +291,7 @@ function QuickLogModal({
       await createMealEntry({
         meal_type: mealType,
         raw_text: `${quantity || '1'} ${unit || 'serving'} ${product.name}`,
-        items: [
-          {
-            product_id: product.id,
-            quantity: parseFloat(quantity) || 1,
-            unit: unit.trim() || 'serving',
-          },
-        ],
+        items: [{ product_id: product.id, quantity: parseFloat(quantity) || 1, unit: unit.trim() || 'serving' }],
       });
       onLogged();
       onClose();
@@ -343,66 +309,50 @@ function QuickLogModal({
         <h2 id="quick-log-product-title" className="text-lg font-bold text-white">Quick Log Product</h2>
         <p className="text-sm text-gray-500 mt-0.5">Choose the meal and quantity for this product.</p>
       </div>
-
       <div className="p-6 space-y-5">
         <div className="glass-card rounded-2xl p-4">
-          <div className="text-base font-semibold text-gray-100">{product.name}</div>
+          <div className="flex items-center gap-2">
+            <div className="text-base font-semibold text-gray-100">{product.name}</div>
+            {product.is_global && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-brand-500/15 text-brand-400 border border-brand-500/25">Common</span>
+            )}
+          </div>
           {product.brand && <div className="text-sm text-gray-500 mt-1">{product.brand}</div>}
           <div className="text-sm text-accent-orange font-semibold mt-3">
             {Math.round(product.calories)} kcal per {formatServingLabel(product)}
           </div>
         </div>
-
         <div>
           <label className="label-dark">Meal</label>
           <div className="grid grid-cols-2 gap-2">
             {(['breakfast', 'lunch', 'dinner', 'snack'] as MealType[]).map((type) => (
-              <button
-                key={type}
-                type="button"
-                onClick={() => setMealType(type)}
+              <button key={type} type="button" onClick={() => setMealType(type)}
                 className={`rounded-xl px-3 py-2 text-sm font-medium transition-all ${
                   mealType === type
                     ? 'bg-brand-500/20 text-brand-400 border border-brand-500/40'
                     : 'bg-dark-700 text-gray-400 border border-transparent hover:text-gray-200 hover:border-white/[0.08]'
-                }`}
-              >
+                }`}>
                 {type.charAt(0).toUpperCase() + type.slice(1)}
               </button>
             ))}
           </div>
         </div>
-
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="label-dark">Quantity</label>
-            <input
-              type="number"
-              min="0.1"
-              step="0.1"
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-              className="input-dark"
-            />
+            <input type="number" min="0.1" step="0.1" value={quantity}
+              onChange={(e) => setQuantity(e.target.value)} className="input-dark" />
           </div>
           <div>
             <label className="label-dark">Unit</label>
-            <input
-              value={unit}
-              onChange={(e) => setUnit(e.target.value)}
-              className="input-dark"
-              placeholder="serving"
-            />
+            <input value={unit} onChange={(e) => setUnit(e.target.value)}
+              className="input-dark" placeholder="serving" />
           </div>
         </div>
-
         {error && (
-          <div className="bg-red-900/30 border border-red-800/60 text-red-400 rounded-xl px-4 py-3 text-sm">
-            {error}
-          </div>
+          <div className="bg-red-900/30 border border-red-800/60 text-red-400 rounded-xl px-4 py-3 text-sm">{error}</div>
         )}
       </div>
-
       <div className="p-6 border-t border-white/[0.06] flex gap-3">
         <button onClick={onClose} className="btn-secondary flex-1">Cancel</button>
         <button onClick={handleLog} disabled={saving} className="btn-primary flex-1">
@@ -427,6 +377,7 @@ function ProductCard({
   onToggleFavorite: (product: Product) => void;
 }) {
   const [confirming, setConfirming] = useState(false);
+  const isGlobal = !!product.is_global;
 
   return (
     <article className="glass-card-hover rounded-2xl p-5 animate-fade-up group">
@@ -434,24 +385,30 @@ function ProductCard({
       <div className="flex items-start justify-between mb-3">
         <div className="min-w-0 flex-1 pr-3">
           <div className="flex items-start gap-2">
-            <button
-              type="button"
-              aria-label={product.is_favorite ? `Unstar ${product.name}` : `Star ${product.name}`}
-              title={product.is_favorite ? 'Remove star' : 'Star product'}
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleFavorite(product);
-              }}
-              className={`mt-0.5 rounded-lg border px-2 py-1 text-sm leading-none transition-colors ${
-                product.is_favorite
-                  ? 'border-accent-yellow/40 bg-accent-yellow/15 text-accent-yellow'
-                  : 'border-white/[0.08] bg-dark-700/50 text-gray-500 hover:text-accent-yellow hover:border-accent-yellow/30'
-              }`}
-            >
-              {product.is_favorite ? '★' : '☆'}
-            </button>
+            {!isGlobal && (
+              <button
+                type="button"
+                aria-label={product.is_favorite ? `Unstar ${product.name}` : `Star ${product.name}`}
+                title={product.is_favorite ? 'Remove star' : 'Star product'}
+                onClick={(e) => { e.stopPropagation(); onToggleFavorite(product); }}
+                className={`mt-0.5 rounded-lg border px-2 py-1 text-sm leading-none transition-colors flex-shrink-0 ${
+                  product.is_favorite
+                    ? 'border-accent-yellow/40 bg-accent-yellow/15 text-accent-yellow'
+                    : 'border-white/[0.08] bg-dark-700/50 text-gray-500 hover:text-accent-yellow hover:border-accent-yellow/30'
+                }`}
+              >
+                {product.is_favorite ? '★' : '☆'}
+              </button>
+            )}
             <div className="min-w-0">
-              <div className="font-semibold text-gray-100 text-sm leading-snug">{product.name}</div>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <div className="font-semibold text-gray-100 text-sm leading-snug">{product.name}</div>
+                {isGlobal && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-brand-500/15 text-brand-400 border border-brand-500/25 leading-none">
+                    Common
+                  </span>
+                )}
+              </div>
               {product.brand && <div className="text-xs text-gray-500 mt-0.5">{product.brand}</div>}
             </div>
           </div>
@@ -483,66 +440,87 @@ function ProductCard({
         )}
       </div>
 
-      {/* Delete */}
+      {/* Actions */}
       <div className="flex items-center justify-between">
         <button
           type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onSelect(product);
-          }}
+          onClick={(e) => { e.stopPropagation(); onSelect(product); }}
           className="text-sm text-brand-400 hover:text-brand-300 font-medium transition-colors"
         >
           Quick add
         </button>
-        {confirming ? (
-          <div className="flex gap-3 text-xs">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setConfirming(false);
-              }}
-              className="text-gray-500 hover:text-gray-300 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(product.id);
-              }}
-              className="text-red-400 hover:text-red-300 font-semibold transition-colors"
-            >
-              Delete
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setConfirming(true);
-            }}
-            className="text-xs text-gray-500 hover:text-red-400 transition-colors"
-          >
-            Delete
-          </button>
+        {!isGlobal && (
+          confirming ? (
+            <div className="flex gap-3 text-xs">
+              <button type="button" onClick={(e) => { e.stopPropagation(); setConfirming(false); }}
+                className="text-gray-500 hover:text-gray-300 transition-colors">Cancel</button>
+              <button type="button" onClick={(e) => { e.stopPropagation(); onDelete(product.id); }}
+                className="text-red-400 hover:text-red-300 font-semibold transition-colors">Delete</button>
+            </div>
+          ) : (
+            <button type="button" onClick={(e) => { e.stopPropagation(); setConfirming(true); }}
+              className="text-xs text-gray-500 hover:text-red-400 transition-colors">Delete</button>
+          )
         )}
       </div>
     </article>
   );
 }
 
+// ── Section header ────────────────────────────────────────────────────────────
+
+function SectionHeader({
+  title,
+  count,
+  icon,
+  description,
+  expanded,
+  onToggle,
+}: {
+  title: string;
+  count: number;
+  icon: string;
+  description: string;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="w-full flex items-center justify-between glass-card rounded-2xl px-5 py-4 hover:bg-white/[0.04] transition-colors group"
+    >
+      <div className="flex items-center gap-3">
+        <span className="text-xl">{icon}</span>
+        <div className="text-left">
+          <div className="font-semibold text-gray-100 text-sm">{title}</div>
+          <div className="text-xs text-gray-500 mt-0.5">{description}</div>
+        </div>
+      </div>
+      <div className="flex items-center gap-3">
+        <span className="text-xs px-2.5 py-1 rounded-full bg-dark-700 text-gray-400 font-medium">{count}</span>
+        <svg
+          className={`w-4 h-4 text-gray-500 transition-transform ${expanded ? 'rotate-180' : ''}`}
+          fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+    </button>
+  );
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 200;
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
   const [loadError, setLoadError] = useState('');
+  const [paginationError, setPaginationError] = useState('');
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [search, setSearch] = useState('');
@@ -553,12 +531,13 @@ export default function ProductsPage() {
   const [saveError, setSaveError] = useState('');
   const [deleteError, setDeleteError] = useState('');
   const [favoriteError, setFavoriteError] = useState('');
-  const [hasMore, setHasMore] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [myExpanded, setMyExpanded] = useState(true);
+  const [globalExpanded, setGlobalExpanded] = useState(true);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = async (reset = true) => {
     setLoadError('');
+    setPaginationError('');
     if (reset) {
       setLoading(true);
     } else {
@@ -570,23 +549,36 @@ export default function ProductsPage() {
         limit: PAGE_SIZE,
         search: search.trim() || undefined,
       });
-      setProducts((current) => sortProducts(reset ? r.data : [...current, ...r.data]));
+      setProducts((current) => {
+        if (reset) return r.data;
+        const seen = new Set(current.map((product) => product.id));
+        return [...current, ...r.data.filter((product) => !seen.has(product.id))];
+      });
       setHasMore(r.data.length === PAGE_SIZE);
     } catch {
-      setLoadError('Failed to load products. Please try again.');
+      if (reset) {
+        setLoadError('Failed to load products. Please try again.');
+      } else {
+        setPaginationError('Failed to load more products. Please try again.');
+      }
     } finally {
-      setLoading(false);
-      setLoadingMore(false);
+      if (reset) {
+        setLoading(false);
+      } else {
+        setLoadingMore(false);
+      }
     }
   };
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      void load(true);
-    }, search.trim() ? 250 : 0);
+    const timer = window.setTimeout(() => { void load(true); }, search.trim() ? 300 : 0);
     return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
+
+  // Split into user's own vs global
+  const myProducts = sortProducts(products.filter((p) => !p.is_global));
+  const globalProducts = products.filter((p) => p.is_global).sort((a, b) => a.name.localeCompare(b.name));
 
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -614,7 +606,6 @@ export default function ProductsPage() {
       setShowManual(false);
       await load(true);
     } catch (err: unknown) {
-      // Inline error state — no alert() (Issue 23)
       const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
       setSaveError(msg || 'Failed to save product. Please try again.');
     } finally {
@@ -633,34 +624,19 @@ export default function ProductsPage() {
   };
 
   const handleToggleFavorite = async (product: Product) => {
+    if (product.is_global) return;
     const nextFavorite = !product.is_favorite;
     setFavoriteError('');
-
-    // Optimistic update
-    setProducts((current) =>
-      sortProducts(
-        current.map((item) =>
-          item.id === product.id ? { ...item, is_favorite: nextFavorite } : item
-        )
-      )
-    );
-
+    setProducts((current) => current.map((item) =>
+      item.id === product.id ? { ...item, is_favorite: nextFavorite } : item
+    ));
     try {
       const response = await updateProduct(product.id, { is_favorite: nextFavorite });
-      setProducts((current) =>
-        sortProducts(
-          current.map((item) => (item.id === product.id ? response.data : item))
-        )
-      );
+      setProducts((current) => current.map((item) => item.id === product.id ? response.data : item));
     } catch {
-      // Revert optimistic update and show inline error (Issue 23)
-      setProducts((current) =>
-        sortProducts(
-          current.map((item) =>
-            item.id === product.id ? { ...item, is_favorite: product.is_favorite } : item
-          )
-        )
-      );
+      setProducts((current) => current.map((item) =>
+        item.id === product.id ? { ...item, is_favorite: product.is_favorite } : item
+      ));
       setFavoriteError('Failed to update starred product. Please try again.');
     }
   };
@@ -670,11 +646,7 @@ export default function ProductsPage() {
       {review && <ReviewModal review={review} onSave={handleSave} onCancel={() => setReview(null)} saving={saving} saveError={saveError} />}
       {showManual && <ManualModal onSave={handleSave} onCancel={() => setShowManual(false)} saving={saving} saveError={saveError} />}
       {selectedProduct && (
-        <QuickLogModal
-          product={selectedProduct}
-          onClose={() => setSelectedProduct(null)}
-          onLogged={() => {}}
-        />
+        <QuickLogModal product={selectedProduct} onClose={() => setSelectedProduct(null)} onLogged={() => {}} />
       )}
 
       <div className="space-y-6">
@@ -683,21 +655,15 @@ export default function ProductsPage() {
           <div>
             <h1 className="text-2xl font-bold text-white">Products</h1>
             <p className="text-sm text-gray-500 mt-0.5">
-              {products.length > 0 ? `${products.length} product${products.length !== 1 ? 's' : ''} in your library` : 'Build your nutrition library'}
+              {myProducts.length} personal · {globalProducts.length} common foods
             </p>
           </div>
           <div className="flex gap-2">
-            <button
-              onClick={() => setShowManual(true)}
-              className="btn-secondary text-sm px-4"
-            >
-              + Manual
+            <button onClick={() => setShowManual(true)} className="btn-secondary text-sm px-4">
+              + Add Product
             </button>
-            <button
-              onClick={() => fileRef.current?.click()}
-              disabled={uploading}
-              className="btn-primary text-sm px-4 flex items-center gap-2"
-            >
+            <button onClick={() => fileRef.current?.click()} disabled={uploading}
+              className="btn-primary text-sm px-4 flex items-center gap-2">
               {uploading ? (
                 <>
                   <svg className="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
@@ -719,18 +685,19 @@ export default function ProductsPage() {
           </div>
         </div>
 
+        {/* Search */}
         {!loading && (
           <div className="animate-fade-up">
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search products by name or brand"
+              placeholder="Search products by name or brand…"
               className="input-dark max-w-md"
             />
           </div>
         )}
 
-        {/* General errors */}
+        {/* Errors */}
         {deleteError && (
           <div role="alert" className="bg-red-900/30 border border-red-800/60 text-red-400 rounded-xl px-4 py-3 text-sm animate-fade-up flex items-center justify-between">
             <span>{deleteError}</span>
@@ -743,15 +710,17 @@ export default function ProductsPage() {
             <button onClick={() => setFavoriteError('')} aria-label="Dismiss" className="ml-3 text-red-400 hover:text-red-300">✕</button>
           </div>
         )}
-
-        {/* Upload error */}
         {uploadError && (
           <div role="alert" className="bg-red-900/30 border border-red-800/60 text-red-400 rounded-xl px-4 py-3 text-sm animate-fade-up">
             {uploadError}
           </div>
         )}
-
-        {/* Uploading state */}
+        {paginationError && (
+          <div role="alert" className="bg-red-900/30 border border-red-800/60 text-red-400 rounded-xl px-4 py-3 text-sm animate-fade-up flex items-center justify-between">
+            <span>{paginationError}</span>
+            <button onClick={() => setPaginationError('')} aria-label="Dismiss" className="ml-3 text-red-400 hover:text-red-300">&times;</button>
+          </div>
+        )}
         {uploading && (
           <div className="glass-card rounded-2xl p-6 text-center animate-fade-up">
             <svg className="animate-spin w-7 h-7 text-brand-500 mx-auto mb-3" fill="none" viewBox="0 0 24 24">
@@ -772,65 +741,90 @@ export default function ProductsPage() {
             </svg>
           </div>
         ) : loadError ? (
-          /* Load error with retry — users won't confuse this for "No products" (Issue 33) */
           <div role="alert" className="text-center py-16 animate-fade-up">
             <div className="w-14 h-14 glass-card rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl">⚠️</div>
             <p className="text-gray-400 text-sm mb-4">{loadError}</p>
-            <button
-              onClick={() => { setLoading(true); void load(true); }}
-              className="btn-secondary text-sm"
-            >
-              Retry
-            </button>
-          </div>
-        ) : products.length === 0 && !search.trim() ? (
-          <div className="text-center py-20 animate-fade-up">
-            <div className="w-16 h-16 glass-card rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl">
-              📦
-            </div>
-            <h2 className="text-lg font-semibold text-gray-300 mb-1">No products yet</h2>
-            <p className="text-gray-600 text-sm max-w-sm mx-auto">
-              Upload a PDF nutrition label and AI will extract macros automatically, or add a product manually.
-            </p>
-            <div className="flex gap-3 justify-center mt-6">
-              <button onClick={() => setShowManual(true)} className="btn-secondary text-sm">
-                + Add manually
-              </button>
-              <button onClick={() => fileRef.current?.click()} className="btn-primary text-sm">
-                Upload PDF
-              </button>
-            </div>
-          </div>
-        ) : products.length === 0 ? (
-          <div className="glass-card rounded-2xl p-6 text-sm text-gray-400 animate-fade-up">
-            No products match your search.
+            <button onClick={() => { setLoading(true); void load(true); }} className="btn-secondary text-sm">Retry</button>
           </div>
         ) : (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {products.map((p) => (
-                <ProductCard
-                  key={p.id}
-                  product={p}
-                  onDelete={handleDelete}
-                  onSelect={setSelectedProduct}
-                  onToggleFavorite={handleToggleFavorite}
-                />
-              ))}
+          <div className="space-y-6">
+
+            {/* ── My Products ────────────────────────────────────────── */}
+            <div className="space-y-3">
+              <SectionHeader
+                title="My Products"
+                count={myProducts.length}
+                icon="📦"
+                description="Only visible to you — add your own foods here"
+                expanded={myExpanded}
+                onToggle={() => setMyExpanded((v) => !v)}
+              />
+              {myExpanded && (
+                myProducts.length === 0 ? (
+                  <div className="text-center py-10 animate-fade-up">
+                    <p className="text-gray-600 text-sm">
+                      {search.trim()
+                        ? 'No personal products match your search.'
+                        : 'No personal products yet — add one manually or upload a PDF nutrition label.'}
+                    </p>
+                    {!search.trim() && (
+                      <div className="flex gap-3 justify-center mt-4">
+                        <button onClick={() => setShowManual(true)} className="btn-secondary text-sm">+ Add manually</button>
+                        <button onClick={() => fileRef.current?.click()} className="btn-primary text-sm">Upload PDF</button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {myProducts.map((p) => (
+                      <ProductCard key={p.id} product={p}
+                        onDelete={handleDelete} onSelect={setSelectedProduct} onToggleFavorite={handleToggleFavorite} />
+                    ))}
+                  </div>
+                )
+              )}
             </div>
+
+            {/* ── Common Foods ───────────────────────────────────────── */}
+            {globalProducts.length > 0 && (
+              <div className="space-y-3">
+                <SectionHeader
+                  title="Common Foods"
+                  count={globalProducts.length}
+                  icon="🌍"
+                  description="Pre-loaded foods available to all users — quick add to any meal"
+                  expanded={globalExpanded}
+                  onToggle={() => setGlobalExpanded((v) => !v)}
+                />
+                {globalExpanded && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {(search.trim()
+                      ? globalProducts.filter((p) =>
+                          p.name.toLowerCase().includes(search.toLowerCase()) ||
+                          (p.brand || '').toLowerCase().includes(search.toLowerCase())
+                        )
+                      : globalProducts
+                    ).map((p) => (
+                      <ProductCard key={p.id} product={p}
+                        onDelete={handleDelete} onSelect={setSelectedProduct} onToggleFavorite={handleToggleFavorite} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             {hasMore && (
               <div className="flex justify-center pt-2">
                 <button
                   type="button"
-                  onClick={() => void load(false)}
+                  onClick={() => { void load(false); }}
                   disabled={loadingMore}
-                  className="btn-secondary text-sm px-5"
+                  className="btn-secondary text-sm min-w-40"
                 >
-                  {loadingMore ? 'Loading...' : 'Load more'}
+                  {loadingMore ? 'Loading...' : 'Load more products'}
                 </button>
               </div>
             )}
-          </>
+          </div>
         )}
       </div>
     </Layout>

@@ -83,8 +83,10 @@ export interface Product {
   fiber_g?: number | null;
   sodium_mg?: number | null;
   created_at: string;
+  is_global?: boolean;
   has_source_pdf?: boolean;
   chroma_indexed?: boolean;
+  other_nutrients_json?: Record<string, unknown> | null;
 }
 
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';

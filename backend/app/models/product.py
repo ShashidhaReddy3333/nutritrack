@@ -28,6 +28,7 @@ class Product(Base):
     sodium_mg = Column(Float, nullable=True)
     other_nutrients_json = Column(JSON, nullable=True)
     source_pdf_path = Column(String, nullable=True)
+    is_global = Column(Boolean, nullable=False, default=False, index=True)
     chroma_indexed = Column(Boolean, nullable=False, default=False)  # Issue 14
     is_deleted = Column(Boolean, nullable=False, default=False, index=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

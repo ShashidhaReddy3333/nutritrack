@@ -86,7 +86,7 @@ def run():
             db.add(Product(user_id=user.id, **p))
 
         db.commit()
-        print(f"✓ Seeded demo user: {SEED_EMAIL} / {SEED_PASSWORD}")
+        print(f"✓ Seeded demo user: {SEED_EMAIL}")
         print(f"✓ Added {len(EXAMPLE_PRODUCTS)} example products")
 
     finally:

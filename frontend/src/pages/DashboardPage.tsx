@@ -214,6 +214,152 @@ function MealSection({
   );
 }
 
+// ── DayPulse ──────────────────────────────────────────────────────────────────
+
+const SLOT_COLOR: Record<string, string> = {
+  breakfast: '#fb923c',
+  lunch:     '#facc15',
+  dinner:    '#c084fc',
+  snack:     '#2dd4bf',
+};
+
+function DayPulse({ entries }: { entries: MealEntryOut[] }) {
+  // current time as 0-100 %
+  const now = new Date();
+  const nowPct = ((now.getHours() * 60 + now.getMinutes()) / (24 * 60)) * 100;
+
+  // group entries by id so each log appears once; use logged_at for position
+  const points = entries.map((e) => {
+    const dt = new Date(e.logged_at);
+    const pct = ((dt.getHours() * 60 + dt.getMinutes()) / (24 * 60)) * 100;
+    const cal = e.total_nutrients?.calories ?? 0;
+    return { id: e.id, pct, cal, type: e.meal_type };
+  });
+
+  const maxCal = Math.max(...points.map((p) => p.cal), 1);
+  const BAR_MAX = 52; // px height for the tallest bar
+
+  return (
+    <div className="glass-card rounded-2xl p-5 animate-fade-up">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <div className="text-[10px] text-gray-600 font-bold uppercase tracking-widest mb-0.5">Day Pulse</div>
+          <div className="text-sm font-semibold text-gray-200">Meals across your day</div>
+        </div>
+        <div className="flex flex-wrap gap-x-3 gap-y-1">
+          {(['breakfast', 'lunch', 'dinner', 'snack'] as const).map((slot) => (
+            <div key={slot} className="flex items-center gap-1.5 text-[10px] text-gray-500 capitalize">
+              <span
+                className="w-1.5 h-1.5 rounded-full inline-block"
+                style={{ background: SLOT_COLOR[slot], boxShadow: `0 0 5px ${SLOT_COLOR[slot]}` }}
+              />
+              {slot}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Timeline */}
+      <div className="relative" style={{ height: 88 }}>
+        {/* Hour grid lines */}
+        {[0, 6, 12, 18, 24].map((h) => (
+          <div
+            key={h}
+            className="absolute top-0 bottom-5 w-px"
+            style={{ left: `${(h / 24) * 100}%`, background: 'rgba(255,255,255,0.04)' }}
+          />
+        ))}
+
+        {/* NOW cursor */}
+        <div
+          className="absolute top-0 bottom-5"
+          style={{
+            left: `${nowPct}%`,
+            width: 1.5,
+            background: '#4ade80',
+            boxShadow: '0 0 10px #4ade80',
+          }}
+        >
+          <div
+            className="absolute"
+            style={{
+              top: -5, left: -3.5, width: 8, height: 8,
+              borderRadius: '50%', background: '#4ade80',
+              boxShadow: '0 0 9px #4ade80',
+            }}
+          />
+          <div
+            className="absolute font-bold tracking-wider"
+            style={{ top: -17, left: -8, fontSize: 8, color: '#4ade80', whiteSpace: 'nowrap' }}
+          >
+            NOW
+          </div>
+        </div>
+
+        {/* Meal marks */}
+        {points.map((p) => {
+          const barH = Math.max(8, (p.cal / maxCal) * BAR_MAX);
+          const color = SLOT_COLOR[p.type] ?? '#9ca3af';
+          return (
+            <div
+              key={p.id}
+              className="absolute"
+              style={{ left: `${p.pct}%`, bottom: 20, transform: 'translateX(-50%)' }}
+              title={`${p.type}: ${Math.round(p.cal)} kcal`}
+            >
+              {/* calorie label */}
+              {p.cal > 0 && (
+                <div
+                  className="absolute text-center font-semibold tabular-nums"
+                  style={{ bottom: barH + 4, left: '50%', transform: 'translateX(-50%)', fontSize: 8, color: '#9ca3af', whiteSpace: 'nowrap' }}
+                >
+                  {Math.round(p.cal)}
+                </div>
+              )}
+              {/* bar */}
+              <div
+                style={{
+                  width: 3, height: barH, marginLeft: 2.5,
+                  background: `linear-gradient(to top, ${color}, ${color}44)`,
+                  borderRadius: 99,
+                  marginBottom: 2,
+                }}
+              />
+              {/* dot */}
+              <div
+                style={{
+                  width: 8, height: 8, borderRadius: '50%',
+                  background: color, boxShadow: `0 0 10px ${color}`,
+                  border: '1.5px solid #0b1221',
+                  marginLeft: -0.5,
+                }}
+              />
+            </div>
+          );
+        })}
+
+        {/* Empty state */}
+        {points.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center pb-5">
+            <span className="text-xs text-gray-700">No meals logged today — meals will appear here as you log them</span>
+          </div>
+        )}
+
+        {/* Hour labels */}
+        <div
+          className="absolute bottom-0 left-0 right-0 flex justify-between"
+          style={{ fontSize: 9, color: '#4b5563' }}
+        >
+          {['12a', '6a', '12p', '6p', '12a'].map((label, index) => (
+            <span key={`${label}-${index}`}>{label}</span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Custom Tooltip ────────────────────────────────────────────────────────────
 
 function DarkTooltip({ active, payload, label, unit }: {
@@ -423,6 +569,9 @@ export default function DashboardPage() {
                 </div>
               ))}
             </div>
+
+            {/* Day Pulse timeline */}
+            <DayPulse entries={todayEntries} />
 
             {/* Meal timeline */}
             <div className="glass-card rounded-2xl p-6 animate-fade-up">

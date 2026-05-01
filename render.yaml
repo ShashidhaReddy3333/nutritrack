@@ -4,56 +4,64 @@ services:
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    plan: free
+    plan: starter
     healthCheckPath: /health
     envVars:
-      # App mode — "development" bypasses strict production checks so free-tier
-      # services (no Redis, no SMTP, no Ollama) still allow the server to boot.
       - key: APP_ENV
-        value: development
-
-      # IMPORTANT: Replace [SUPABASE_DB_PASSWORD] with the password from
-      # https://supabase.com/dashboard/project/csrakbrozxmbayqamdel/settings/database
+        value: production
+      - key: DEBUG
+        value: "false"
       - key: DATABASE_URL
-        value: postgresql://postgres:[SUPABASE_DB_PASSWORD]@db.csrakbrozxmbayqamdel.supabase.co:5432/postgres
+        sync: false
       - key: POSTGRES_PASSWORD
-        value: "[SUPABASE_DB_PASSWORD]"
-
-      # Auto-generated secret key — or replace with your own (openssl rand -hex 32)
+        sync: false
       - key: SECRET_KEY
-        value: ec06955e1367309eb78ebdf64a4640e3156bf7c5b70892ed53df72e9a3d58330
-
-      # Frontend URL — cookies and CORS
+        sync: false
       - key: CORS_ORIGINS
-        value: "https://nutritrack.human-pulse.com"
-      - key: PUBLIC_APP_URL
-        value: "https://nutritrack.human-pulse.com"
+        sync: false
       - key: COOKIE_SECURE
         value: "true"
       - key: COOKIE_SAMESITE
-        value: "lax"
-
-      # In-memory rate limiting (resets on restart — good enough for free tier)
-      - key: RATE_LIMIT_STORAGE_URI
-        value: "memory://"
-
-      # Ephemeral storage — data resets on redeploy (acceptable on free tier)
-      - key: CHROMA_PERSIST_DIR
-        value: "/tmp/chroma"
-      - key: UPLOAD_DIR
-        value: "/tmp/uploads"
-
-      # LLM — leave blank to disable AI meal parsing (optional upgrade later)
-      - key: OLLAMA_BASE_URL
-        value: ""
-      - key: OLLAMA_MODEL
-        value: "llama3.2:3b"
-
-      # Email — leave blank to disable password-reset emails
+        value: strict
+      - key: PUBLIC_APP_URL
+        sync: false
       - key: SMTP_HOST
-        value: ""
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USERNAME
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
       - key: SMTP_FROM
-        value: "no-reply@human-pulse.com"
-
-      - key: DEBUG
-        value: "false"
+        sync: false
+      - key: SMTP_USE_TLS
+        value: "true"
+      - key: RATE_LIMIT_STORAGE_URI
+        sync: false
+      - key: OLLAMA_BASE_URL
+        sync: false
+      - key: OLLAMA_MODEL
+        value: llama3.2:3b
+      - key: OLLAMA_TIMEOUT_SECONDS
+        value: "30"
+      - key: OLLAMA_MAX_RETRIES
+        value: "2"
+      - key: CHROMA_PERSIST_DIR
+        value: /data/chroma
+      - key: UPLOAD_DIR
+        value: /data/uploads
+      - key: MAX_UPLOAD_BYTES
+        value: "10485760"
+      - key: PDF_MAX_PAGES
+        value: "6"
+      - key: PDF_OCR_MAX_PAGES
+        value: "2"
+      - key: PDF_EXTRACTION_TIMEOUT_SECONDS
+        value: "20"
+      - key: PDF_MAX_PAGE_DIMENSION_POINTS
+        value: "2880"
+      - key: PDF_MAX_RENDER_PIXELS
+        value: "8000000"
+      - key: PDF_OCR_SCALE
+        value: "1.5"
