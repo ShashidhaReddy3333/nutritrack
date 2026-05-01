@@ -82,7 +82,7 @@ def _index_product_safe(product: Product, user_id: str) -> bool:
         return False
 
 
-# ── PDF upload + extraction preview ──────────────────────────────────────────
+# -- PDF upload + extraction preview --
 
 @router.post("/extract", response_model=ExtractionReview)
 @limiter.limit("5/minute")
@@ -91,13 +91,11 @@ async def extract_pdf(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
 ):
-    """Stage 1: Upload PDF → returns extracted data for user review. Nothing is saved yet."""
+    """Stage 1: Upload PDF -> returns extracted data for user review. Nothing is saved yet."""
     if not file.filename or not file.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are accepted")
 
     pdf_bytes = await _read_bounded_upload(file)
-
-    # Validate magic bytes — not just extension (Issue 9)
     _validate_pdf_magic(pdf_bytes)
 
     try:
@@ -112,7 +110,6 @@ async def extract_pdf(
     try:
         data = await normalise_with_llm(raw_text)
     except Exception as exc:
-        # Log full details server-side, return generic message to client (Issue 28)
         logger.error("LLM extraction error for user %s: %s", current_user.id, exc, exc_info=True)
         raise HTTPException(
             status_code=502,
@@ -120,7 +117,6 @@ async def extract_pdf(
         )
 
     confidence = assess_confidence(data)
-
     extracted = NutrientData(
         serving_size_g=float(data.get("serving_size_g") or 100),
         serving_quantity=float(data["serving_quantity"]) if data.get("serving_quantity") is not None else None,
@@ -134,7 +130,6 @@ async def extract_pdf(
         sodium_mg=float(data["sodium_mg"]) if data.get("sodium_mg") is not None else None,
         other_nutrients=data.get("other_nutrients"),
     )
-
     return ExtractionReview(
         extracted=extracted,
         raw_text_snippet=raw_text[:1000],
@@ -144,7 +139,7 @@ async def extract_pdf(
     )
 
 
-# ── CRUD ──────────────────────────────────────────────────────────────────────
+# -- CRUD --
 
 @router.post("", response_model=ProductOut, status_code=status.HTTP_201_CREATED)
 def create_product(
@@ -173,19 +168,13 @@ def create_product(
     db.add(product)
     db.commit()
     db.refresh(product)
-
-    # Index in Chroma and track success (Issue 14)
     indexed = _index_product_safe(product, str(current_user.id))
     if indexed:
         product.chroma_indexed = True
         db.commit()
         db.refresh(product)
     else:
-        logger.warning(
-            "Product %s created but NOT indexed in Chroma — AI search will not find it",
-            product.id,
-        )
-
+        logger.warning("Product %s created but NOT indexed in Chroma", product.id)
     return ProductOut.from_orm_safe(product)
 
 
@@ -225,6 +214,7 @@ def get_product(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    from sqlalchemy import or_
     product = db.query(Product).filter(
         Product.id == product_id,
         or_(
@@ -252,7 +242,6 @@ def update_product(
     ).first()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-
     update_data = payload.model_dump(exclude_unset=True)
     nullable_fields = {"brand", "serving_quantity", "serving_unit", "sugar_g", "fiber_g", "sodium_mg", "other_nutrients_json"}
     for field, value in update_data.items():
@@ -261,14 +250,11 @@ def update_product(
         setattr(product, field, value)
     db.commit()
     db.refresh(product)
-
-    # Re-index and update tracking flag
     indexed = _index_product_safe(product, str(current_user.id))
     if indexed != product.chroma_indexed:
         product.chroma_indexed = indexed
         db.commit()
         db.refresh(product)
-
     return ProductOut.from_orm_safe(product)
 
 
@@ -285,12 +271,10 @@ def delete_product(
     ).first()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-
     try:
         delete_product_embeddings(str(product_id))
     except Exception as exc:
         logger.warning("Could not delete embeddings for product %s: %s", product_id, exc)
-
     product.is_deleted = True
     product.chroma_indexed = False
     db.commit()

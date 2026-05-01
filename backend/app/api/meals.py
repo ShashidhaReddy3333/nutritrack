@@ -98,6 +98,7 @@ async def parse_meal(
 
         sem_results = await asyncio.to_thread(semantic_search, item_name, str(current_user.id), 5)
 
+        from sqlalchemy import or_
         keyword_hits = (
             db.query(Product)
             .filter(
@@ -121,6 +122,7 @@ async def parse_meal(
         if not product_scores:
             candidates = []
         else:
+            from sqlalchemy import or_ as _or
             products = (
                 db.query(Product)
                 .filter(
